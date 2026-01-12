@@ -1,6 +1,7 @@
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+    id("org.jetbrains.kotlin.plugin.compose")
 }
 
 android {
@@ -11,7 +12,7 @@ android {
     defaultConfig {
         applicationId = "com.satish.wireguardvpn"
 
-        // APK UNIVERSAL (Android 8+)
+        // Universal (Android 8+)
         minSdk = 26
         targetSdk = 36
 
@@ -22,6 +23,9 @@ android {
     }
 
     buildTypes {
+        debug {
+            isMinifyEnabled = false
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -29,13 +33,9 @@ android {
                 "proguard-rules.pro"
             )
         }
-
-        debug {
-            isMinifyEnabled = false
-        }
     }
 
-    // GARANTE APK UNIVERSAL (não gera split por arquitetura)
+    // GARANTE APK UNIVERSAL
     splits {
         abi {
             isEnable = false
@@ -55,10 +55,6 @@ android {
         compose = true
     }
 
-    composeOptions {
-        kotlinCompilerExtensionVersion = "1.5.14"
-    }
-
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -68,26 +64,22 @@ android {
 
 dependencies {
 
-    // Android Core
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
-
-    // Activity
     implementation("androidx.activity:activity-compose:1.11.0")
 
-    // Jetpack Compose (BOM)
+    // Compose BOM
     implementation(platform("androidx.compose:compose-bom:2024.10.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
 
-    // Debug tools
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
 
-    // WireGuard Tunnel (Go backend wrapper)
+    // WireGuard
     implementation("com.wireguard.android:tunnel:1.0.20230706")
 }
