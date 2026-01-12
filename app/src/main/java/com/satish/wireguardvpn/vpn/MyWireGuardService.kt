@@ -26,11 +26,10 @@ import kotlinx.coroutines.launch
 
 class MyWireGuardService : VpnService() {
 
-    // Using a private companion object is a common pattern for constants internal to a class.
-     companion object {
+    companion object {
         private const val NOTIF_CHANNEL = "vpn"
         private const val NOTIF_ID = 42
-        private const val NOTIF_CHANNEL_NAME = "VPN Status"
+        private const val NOTIF_CHANNEL_NAME = "Status da VPN"
         private const val TAG = "MyWireGuardService"
         const val ACTION_START_TUNNEL = "com.satish.vpn.action.START_TUNNEL"
     }
@@ -43,7 +42,6 @@ class MyWireGuardService : VpnService() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START_TUNNEL -> {
-                // Update the running state in the repository
                 VpnStateRepository.setRunning(true)
                 startTunnel()
             }
@@ -53,26 +51,24 @@ class MyWireGuardService : VpnService() {
     }
 
     override fun onDestroy() {
-        Log.d(TAG, "onDestroy called")
+        Log.d(TAG, "onDestroy chamado")
         scope.launch {
             try {
-                // Update the running state in the repository
                 VpnStateRepository.setRunning(false)
                 backend?.setState(tunnel, Tunnel.State.DOWN, null)
             } catch (e: Exception) {
-                Log.e(TAG, "Error shutting down backend", e)
+                Log.e(TAG, "Erro ao desligar backend", e)
             }
         }
-        tunInterface?.close()
-        tunInterface = null
-        backend = null
-        scope.cancel()
+        
         try {
             tunInterface?.close()
         } catch (e: Exception) {
-            e.printStackTrace()
+            Log.e(TAG, "Erro ao fechar interface TUN", e)
         }
+        
         tunInterface = null
+        backend = null
         scope.cancel()
         super.onDestroy()
     }
@@ -80,75 +76,73 @@ class MyWireGuardService : VpnService() {
     private fun startTunnel() {
         ensureNotification()
 
-        // 1. Create a WireGuard Configuration
-        val config = createWireGuardConfig()
-        // 2. Initialize the GoBackend
-        // This must be done *before* Builder.establish()
-        backend = GoBackend(this)
+        try {
+            val config = createWireGuardConfig()
+            backend = GoBackend(this)
 
-        // 3. Establish the VpnService TUN interface
-        val builder = Builder()
-            .setSession("WireGuard-Tunnel")
-            .setMtu(1280) // Standard MTU for WireGuard
-            .addAddress("10.0.0.20",32)
-            .addDnsServer("1.1.1.1")
+            val builder = Builder()
+                .setSession("VPN PlayVicioRP")
+                .setMtu(1340)
+                .addAddress("10.66.66.2", 32)
+                .addDnsServer("1.1.1.1")
+                .addRoute("178.132.198.227", 32)
 
-        // Route all traffic through the tunnel
-        builder.addRoute("0.0.0.0", 0)
-
-        scope.launch(Dispatchers.IO) {
-            // Now, build the TUN interface and start the backend *inside* the coroutine
-            // after the route has been excluded.
-            tunInterface = builder.establish()
-            Log.i(TAG, "TUN established = ${tunInterface != null}")
-            if (tunInterface == null) {
-                Log.e(TAG, "Failed to establish TUN interface.")
-                stopSelf() // This will trigger onDestroy for cleanup
-                return@launch
+            scope.launch(Dispatchers.IO) {
+                try {
+                    tunInterface = builder.establish()
+                    
+                    if (tunInterface == null) {
+                        Log.e(TAG, "Falha ao estabelecer interface TUN")
+                        VpnStateRepository.setRunning(false)
+                        stopSelf()
+                        return@launch
+                    }
+                    
+                    Log.i(TAG, "Interface TUN estabelecida com sucesso")
+                    backend?.setState(tunnel, Tunnel.State.UP, config)
+                    
+                } catch (e: Exception) {
+                    Log.e(TAG, "Erro ao iniciar túnel VPN", e)
+                    VpnStateRepository.setRunning(false)
+                    stopSelf()
+                }
             }
-
-            // 4. Start the WireGuard backend with the TUN file descriptor
-            backend?.setState(tunnel, Tunnel.State.UP, config)
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao configurar VPN", e)
+            VpnStateRepository.setRunning(false)
+            stopSelf()
         }
     }
 
-
     private fun createWireGuardConfig(): Config {
-        // This is where you would load your dynamic or saved configuration.
-        // For this example, we'll create a hardcoded one.
-        // WARNING: Do NOT hardcode private keys in a real application!
         return Config.Builder()
             .setInterface(
                 com.wireguard.config.Interface.Builder()
-                    .parsePrivateKey("sdfrtyjke345s2asdfsdfCNjETzEOB3wOUCsFU=") // Replace with a real private key
-                    .addAddress(InetNetwork.parse("10.0.0.20/32"))
+                    .parsePrivateKey("ABWdhTXtVK3LROm08HP95ydFeri+zPumhbXIImXMr28=")
+                    .addAddress(InetNetwork.parse("10.66.66.2/32"))
                     .addDnsServer(java.net.InetAddress.getByName("1.1.1.1"))
                     .build()
             )
             .addPeer(
                 Peer.Builder()
-                    .parsePublicKey("asfghPAtV9fghfgh42hE=") // Replace with the server's public key
-                    .setEndpoint(InetEndpoint.parse("2.91.244.92:51820")) // Replace with your server IP/host and port
-                    .addAllowedIp(InetNetwork.parse("0.0.0.0/0")) // Route all traffic through the peer
+                    .parsePublicKey("FTGjvPTXq1MbY7pSlHMGAWXzp+BL/L3Cux5ubow9OXQ=")
+                    .setEndpoint(InetEndpoint.parse("54.232.157.183:51820"))
+                    .addAllowedIp(InetNetwork.parse("178.132.198.227/32"))
+                    .setPersistentKeepalive(25)
                     .build()
             )
             .build()
     }
 
-    /**
-     * Ensures the notification channel is created and displays the foreground service notification.
-     * A foreground service is required for VpnService.
-     */
     private fun ensureNotification() {
-        // Use context.getSystemService with the class for type safety and to avoid casting.
         val notificationManager = getSystemService(NotificationManager::class.java)
-            ?: return // Defensive check in case the system service is not available.
+            ?: return
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 NOTIF_CHANNEL,
-                NOTIF_CHANNEL_NAME, // Provide a user-visible name for the channel.
-                NotificationManager.IMPORTANCE_LOW // Low importance is suitable for ongoing status.
+                NOTIF_CHANNEL_NAME,
+                NotificationManager.IMPORTANCE_LOW
             )
             notificationManager.createNotificationChannel(channel)
         }
@@ -162,25 +156,24 @@ class MyWireGuardService : VpnService() {
         )
 
         val notif: Notification = NotificationCompat.Builder(this, NOTIF_CHANNEL)
-            .setContentTitle("WireGuard VPN")
-            .setContentText("Connected")
+            .setContentTitle("VPN PlayVicioRP")
+            .setContentText("Conectado")
             .setSmallIcon(R.drawable.outline_admin_panel_settings_24)
             .setOngoing(true)
             .setContentIntent(pendingIntent)
             .build()
+            
         startForeground(NOTIF_ID, notif)
     }
 
-    // --- Inner class to implement the Tunnel interface ---
     private inner class WireGuardTunnel : Tunnel {
-        override fun getName() = "MyWireGuardTunnel"
+        override fun getName() = "PlayVicioRP"
 
         override fun onStateChange(newState: Tunnel.State) {
-            Log.d(TAG, "Tunnel state changed to: $newState")
+            Log.d(TAG, "Estado do túnel alterado para: $newState")
             if (newState == Tunnel.State.DOWN) {
                 stopSelf()
             }
         }
-
     }
 }
