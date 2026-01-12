@@ -27,7 +27,7 @@ import kotlinx.coroutines.launch
 class MyWireGuardService : VpnService() {
 
     // Using a private companion object is a common pattern for constants internal to a class.
-    private companion object {
+     companion object {
         private const val NOTIF_CHANNEL = "vpn"
         private const val NOTIF_ID = 42
         private const val NOTIF_CHANNEL_NAME = "VPN Status"
