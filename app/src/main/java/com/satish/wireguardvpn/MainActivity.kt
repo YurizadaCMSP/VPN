@@ -20,15 +20,12 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.satish.wireguardvpn.ui.theme.WireguardVPNTheme
@@ -39,25 +36,20 @@ class MainActivity : ComponentActivity() {
 
     private val vpnPermission = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        // If result is OK or null intent (already prepared), we can start service
+    ) { _ ->
         startService(Intent(this, MyWireGuardService::class.java).apply {
             action = MyWireGuardService.ACTION_START_TUNNEL
         })
     }
 
-    // 1. Create a launcher for the notification permission request
     private val requestPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
             if (isGranted) {
-                Log.d("MainActivity", "Notification permission granted.")
-                startVpn()
+                Log.d("MainActivity", "Permissão de notificação concedida.")
             } else {
-                Log.d("MainActivity", "Notification permission denied.")
-                // Even if denied, we can still start the VPN.
-                // The system will show a generic notification on Android 14+.
-                startVpn()
+                Log.d("MainActivity", "Permissão de notificação negada.")
             }
+            startVpn()
         }
 
     private fun startVpn() {
@@ -65,7 +57,6 @@ class MainActivity : ComponentActivity() {
         if (intent != null) {
             vpnPermission.launch(intent)
         } else {
-            // Permission already granted, start the service directly
             startService(Intent(this, MyWireGuardService::class.java).apply {
                 action = MyWireGuardService.ACTION_START_TUNNEL
             })
@@ -77,20 +68,17 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             WireguardVPNTheme {
-
                 val vm = remember { NetworkRulesViewModel(application) }
-                HomeScreen(
-                    isRunning = vm.vpnRunning.collectAsState().value,
-                    onToggle = {
+                TelaInicial(
+                    estaConectado = vm.vpnRunning.collectAsState().value,
+                    aoAlterar = {
                         if (!vm.vpnRunning.value) {
-                            // Check for notification permission before starting VPN
                             if (ContextCompat.checkSelfPermission(
                                     this, Manifest.permission.POST_NOTIFICATIONS
                                 ) == PackageManager.PERMISSION_GRANTED
                             ) {
                                 startVpn()
                             } else {
-                                // Request permission. The result callback will handle starting the VPN.
                                 requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
                             }
                         } else {
@@ -105,31 +93,25 @@ class MainActivity : ComponentActivity() {
 
 @Preview(showBackground = true)
 @Composable
-private fun PreviewHomeScreen() {
+private fun PreviewTelaInicial() {
     WireguardVPNTheme {
-        HomeScreen(isRunning = false, onToggle = {})
+        TelaInicial(estaConectado = false, aoAlterar = {})
     }
 }
 
 @Preview(showBackground = true)
 @Composable
-private fun PreviewHomeScreenRunning() {
+private fun PreviewTelaInicialConectado() {
     WireguardVPNTheme {
-        HomeScreen(
-            isRunning = true,
-            onToggle = {}
-        )
+        TelaInicial(estaConectado = true, aoAlterar = {})
     }
 }
 
-
 @Composable
-private fun HomeScreen(
-    isRunning: Boolean,
-    onToggle: () -> Unit
+private fun TelaInicial(
+    estaConectado: Boolean,
+    aoAlterar: () -> Unit
 ) {
-    var newDomain by remember { mutableStateOf("") }
-
     Scaffold { padding ->
         Column(
             modifier = Modifier
@@ -139,12 +121,22 @@ private fun HomeScreen(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text("WireGuard VPN (Skeleton)", fontSize = 22.sp, fontWeight = FontWeight.Bold)
+            Text(
+                "VPN PlayVicioRP",
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
             Spacer(Modifier.height(12.dp))
-            Button(onClick = onToggle) {
-                Text(if (isRunning) "Disconnect" else "Connect")
+            
+            Text(
+                text = if (estaConectado) "Status: Conectado" else "Status: Desconectado",
+                fontSize = 16.sp,
+                modifier = Modifier.padding(bottom = 20.dp)
+            )
+            
+            Button(onClick = aoAlterar) {
+                Text(if (estaConectado) "Desconectar" else "Conectar")
             }
-            Spacer(Modifier.height(20.dp))
         }
     }
 }
