@@ -35,7 +35,7 @@ android {
         }
     }
 
-    // GARANTE APK UNIVERSAL
+    // FORÇA APK UNIVERSAL
     splits {
         abi {
             isEnable = false
@@ -45,6 +45,9 @@ android {
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_11
         targetCompatibility = JavaVersion.VERSION_11
+
+        // 🔥 ISSO RESOLVE O ERRO DO D8
+        isCoreLibraryDesugaringEnabled = true
     }
 
     kotlinOptions {
@@ -64,17 +67,17 @@ android {
 
 dependencies {
 
+    // Core
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
     implementation("androidx.activity:activity-compose:1.11.0")
 
-    // Compose BOM
+    // Compose
     implementation(platform("androidx.compose:compose-bom:2024.10.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-
     debugImplementation("androidx.compose.ui:ui-tooling")
 
     // Networking
@@ -82,4 +85,7 @@ dependencies {
 
     // WireGuard
     implementation("com.wireguard.android:tunnel:1.0.20230706")
+
+    // 🔥 OBRIGATÓRIO PARA RESOLVER O ERRO
+    coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }
