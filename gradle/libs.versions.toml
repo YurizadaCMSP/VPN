@@ -1,12 +1,12 @@
 [versions]
-agp = "8.13.0"
+agp = "8.7.3"
 kotlin = "2.0.21"
-coreKtx = "1.17.0"
-lifecycleRuntimeKtx = "2.9.4"
-activityCompose = "1.11.0"
-composeBom = "2024.09.00"
+coreKtx = "1.13.1"
+lifecycleRuntimeKtx = "2.8.6"
+activityCompose = "1.9.3"
+composeBom = "2024.06.00"
 okhttp = "4.12.0"
-tunnel = "1.0.20250531"
+tunnel = "1.0.20230706"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -25,4 +25,3 @@ tunnel = { group = "com.wireguard.android", name = "tunnel", version.ref = "tunn
 android-application = { id = "com.android.application", version.ref = "agp" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-compose = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
-
