@@ -1,41 +1,27 @@
 plugins {
-    alias(libs.plugins.android.application)
-    alias(libs.plugins.kotlin.android)
-    alias(libs.plugins.kotlin.compose)
+    id("com.android.application")
+    id("org.jetbrains.kotlin.android")
 }
 
 android {
     namespace = "com.satish.wireguardvpn"
-    compileSdk = 34
+
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.satish.wireguardvpn"
 
-        // 🔥 ESSENCIAL
-        minSdk = 26        // Android 8.0 (recomendado para VPN)
-        targetSdk = 34
+        // APK UNIVERSAL (Android 8+)
+        minSdk = 26
+        targetSdk = 36
 
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // 🔥 APK UNIVERSAL (todas as arquiteturas)
-        ndk {
-            abiFilters += listOf(
-                "armeabi-v7a",
-                "arm64-v8a",
-                "x86",
-                "x86_64"
-            )
-        }
     }
 
     buildTypes {
-        debug {
-            isMinifyEnabled = false
-        }
-
         release {
             isMinifyEnabled = false
             proguardFiles(
@@ -43,12 +29,16 @@ android {
                 "proguard-rules.pro"
             )
         }
+
+        debug {
+            isMinifyEnabled = false
+        }
     }
 
-    // 🔥 NECESSÁRIO para libs nativas (WireGuard)
-    packaging {
-        jniLibs {
-            useLegacyPackaging = true
+    // GARANTE APK UNIVERSAL (não gera split por arquitetura)
+    splits {
+        abi {
+            isEnable = false
         }
     }
 
@@ -64,22 +54,40 @@ android {
     buildFeatures {
         compose = true
     }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.14"
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.lifecycle.runtime.ktx)
-    implementation(libs.androidx.activity.compose)
 
-    implementation(platform(libs.androidx.compose.bom))
-    implementation(libs.androidx.compose.ui)
-    implementation(libs.androidx.compose.ui.graphics)
-    implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.androidx.compose.material3)
+    // Android Core
+    implementation("androidx.core:core-ktx:1.13.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.4")
 
-    implementation(libs.okhttp)
-    implementation(libs.tunnel)
+    // Activity
+    implementation("androidx.activity:activity-compose:1.11.0")
 
-    androidTestImplementation(platform(libs.androidx.compose.bom))
-    debugImplementation(libs.androidx.compose.ui.tooling)
+    // Jetpack Compose (BOM)
+    implementation(platform("androidx.compose:compose-bom:2024.10.00"))
+    implementation("androidx.compose.ui:ui")
+    implementation("androidx.compose.ui:ui-graphics")
+    implementation("androidx.compose.ui:ui-tooling-preview")
+    implementation("androidx.compose.material3:material3")
+
+    // Debug tools
+    debugImplementation("androidx.compose.ui:ui-tooling")
+
+    // Networking
+    implementation("com.squareup.okhttp3:okhttp:4.12.0")
+
+    // WireGuard Tunnel (Go backend wrapper)
+    implementation("com.wireguard.android:tunnel:1.0.20230706")
 }
